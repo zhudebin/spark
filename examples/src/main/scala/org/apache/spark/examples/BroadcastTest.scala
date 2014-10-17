@@ -31,7 +31,7 @@ object BroadcastTest {
     System.setProperty("spark.broadcast.factory", "org.apache.spark.broadcast." + bcName +
       "BroadcastFactory")
     System.setProperty("spark.broadcast.blockSize", blockSize)
-    val sparkConf = new SparkConf().setAppName("Broadcast Test")
+    val sparkConf = new SparkConf().setAppName("Broadcast Test").setMaster("local[1]")
 
     val sc = new SparkContext(sparkConf)
 
