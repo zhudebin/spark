@@ -3,6 +3,7 @@ layout: global
 title: Spark Overview
 ---
 
+dev 1.0.1  基于v1.0.1的定制版
 Apache Spark is a fast and general-purpose cluster computing system.
 It provides high-level APIs in Java, Scala and Python,
 and an optimized engine that supports general execution graphs.
