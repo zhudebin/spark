@@ -201,16 +201,31 @@ private[spark] class Master(
       } else {
         val worker = new WorkerInfo(id, workerHost, workerPort, cores, memory,
           sender, workerUiPort, publicAddress)
-        if (registerWorker(worker)) {
-          persistenceEngine.addWorker(worker)
-          sender ! RegisteredWorker(masterUrl, masterWebUiUrl)
-          schedule()
-        } else {
-          val workerAddress = worker.actor.path.address
-          logWarning("Worker registration failed. Attempted to re-register worker at same " +
+        // 注册之前，先检查 worker数目在允许范围之内
+        var errorMsg = "";
+        val workerAddress = worker.actor.path.address
+        if(persistenceEngine.asInstanceOf[ZooKeeperPersistenceEngine].workerNum() >= 10) {
+          errorMsg = "超过license控制节点数量,Worker registration failed. Attempted " +
+            "to re-register worker at same address: " +
+            workerAddress
+          logWarning("超过license控制节点数量,Worker registration failed. Attempted to " +
+            "re-register worker at same " +
             "address: " + workerAddress)
-          sender ! RegisterWorkerFailed("Attempted to re-register worker at same address: "
-            + workerAddress)
+        } else {
+          if (registerWorker(worker)) {
+            persistenceEngine.addWorker(worker)
+            sender ! RegisteredWorker(masterUrl, masterWebUiUrl)
+            logInfo("注册节点成功，address:" + workerAddress)
+            schedule()
+          } else {
+            logWarning("Worker registration failed. Attempted to re-register worker at same " +
+              "address: " + workerAddress)
+            errorMsg = "Attempted to re-register worker at same address:  " + workerAddress
+
+          }
+        }
+        if(errorMsg.length>0) {
+          sender ! RegisterWorkerFailed(errorMsg)
         }
       }
     }
@@ -822,4 +837,7 @@ private[spark] object Master extends Logging {
     val resp = Await.result(respFuture, timeout).asInstanceOf[WebUIPortResponse]
     (actorSystem, boundPort, resp.webUIBoundPort)
   }
+
+  // 检查节点数量
+
 }

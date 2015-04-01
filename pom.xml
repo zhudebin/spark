@@ -144,19 +144,6 @@
 
   <repositories>
     <repository>
-      <id>eurlanda-repo</id>
-      <!-- This should be at top, it makes maven try the central repo first and
-          then others and hence faster dep resolution -->
-      <name>Maven Repository</name>
-      <url>http://192.168.137.3:8081/nexus/content/groups/eurlanda/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-    <repository>
       <id>central</id>
       <!-- This should be at top, it makes maven try the central repo first and then others and hence faster dep resolution -->
       <name>Maven Repository</name>
@@ -235,18 +222,6 @@
       </snapshots>
     </repository>
   </repositories>
-  <pluginRepositories>
-    <pluginRepository>
-      <id>eurlanda-repo</id>
-      <url>http://192.168.137.3:8081/nexus/content/groups/eurlanda/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </pluginRepository>
-  </pluginRepositories>
 
   <dependencyManagement>
     <dependencies>

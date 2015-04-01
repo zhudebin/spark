@@ -93,4 +93,15 @@ class ZooKeeperPersistenceEngine(serialization: Serialization, conf: SparkConf)
       }
     }
   }
+
+  /**
+   * 获得节点个数
+   * @return
+   */
+  def workerNum(): Int = {
+    val sortedFiles = zk.getChildren().forPath(WORKING_DIR).toList.sorted
+    val workerFiles = sortedFiles.filter(_.startsWith("worker_"))
+    val workers = workerFiles.map(deserializeFromFile[WorkerInfo]).flatten
+    workers.size
+  }
 }
