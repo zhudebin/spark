@@ -58,7 +58,7 @@ object Variance extends Impurity {
    * Get this impurity instance.
    * This is useful for passing impurity parameters to a Strategy in Java.
    */
-  def instance = this
+  def instance: this.type = this
 
 }
 
@@ -98,7 +98,7 @@ private[tree] class VarianceAggregator()
  * (node, feature, bin).
  * @param stats  Array of sufficient statistics for a (node, feature, bin).
  */
-private[tree] class VarianceCalculator(stats: Array[Double]) extends ImpurityCalculator(stats) {
+private[spark] class VarianceCalculator(stats: Array[Double]) extends ImpurityCalculator(stats) {
 
   require(stats.size == 3,
     s"VarianceCalculator requires sufficient statistics array stats to be of length 3," +

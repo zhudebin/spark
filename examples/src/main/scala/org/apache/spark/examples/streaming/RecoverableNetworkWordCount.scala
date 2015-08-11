@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// scalastyle:off println
 package org.apache.spark.examples.streaming
 
 import java.io.File
@@ -25,7 +26,6 @@ import com.google.common.io.Files
 import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
 import org.apache.spark.streaming.{Time, Seconds, StreamingContext}
-import org.apache.spark.streaming.StreamingContext._
 import org.apache.spark.util.IntParam
 
 /**
@@ -56,7 +56,8 @@ import org.apache.spark.util.IntParam
  */
 object RecoverableNetworkWordCount {
 
-  def createContext(ip: String, port: Int, outputPath: String, checkpointDirectory: String) = {
+  def createContext(ip: String, port: Int, outputPath: String, checkpointDirectory: String)
+    : StreamingContext = {
 
     // If you do not see this printed, that means the StreamingContext has been loaded
     // from the new checkpoint
@@ -108,3 +109,4 @@ object RecoverableNetworkWordCount {
     ssc.awaitTermination()
   }
 }
+// scalastyle:on println

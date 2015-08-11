@@ -22,7 +22,7 @@ import java.util.Arrays
 import scala.collection.mutable.ListBuffer
 
 import breeze.linalg.{DenseMatrix => BDM, DenseVector => BDV, SparseVector => BSV, axpy => brzAxpy,
-  svd => brzSvd}
+  svd => brzSvd, MatrixSingularException, inv}
 import breeze.numerics.{sqrt => brzSqrt}
 import com.github.fommil.netlib.BLAS.{getInstance => blas}
 
@@ -30,7 +30,6 @@ import org.apache.spark.Logging
 import org.apache.spark.SparkContext._
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.mllib.linalg._
-import org.apache.spark.mllib.rdd.RDDFunctions._
 import org.apache.spark.mllib.stat.{MultivariateOnlineSummarizer, MultivariateStatisticalSummary}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.util.random.XORShiftRandom
@@ -131,8 +130,8 @@ class RowMatrix(
       throw new IllegalArgumentException(s"Argument with more than 65535 cols: $cols")
     }
     if (cols > 10000) {
-      val mem = cols * cols * 8
-      logWarning(s"$cols columns will require at least $mem bytes of memory!")
+      val memMB = (cols.toLong * cols) / 125000
+      logWarning(s"$cols columns will require at least $memMB megabytes of memory!")
     }
   }
 
@@ -152,10 +151,10 @@ class RowMatrix(
    * storing the right singular vectors, is computed via matrix multiplication as
    * U = A * (V * S^-1^), if requested by user. The actual method to use is determined
    * automatically based on the cost:
-   *  - If n is small (n &lt; 100) or k is large compared with n (k > n / 2), we compute the Gramian
-   *    matrix first and then compute its top eigenvalues and eigenvectors locally on the driver.
-   *    This requires a single pass with O(n^2^) storage on each executor and on the driver, and
-   *    O(n^2^ k) time on the driver.
+   *  - If n is small (n &lt; 100) or k is large compared with n (k &gt; n / 2), we compute
+   *    the Gramian matrix first and then compute its top eigenvalues and eigenvectors locally
+   *    on the driver. This requires a single pass with O(n^2^) storage on each executor and
+   *    on the driver, and O(n^2^ k) time on the driver.
    *  - Otherwise, we compute (A' * A) * v in a distributive way and send it to ARPACK's DSAUPD to
    *    compute (A' * A)'s top eigenvalues and eigenvectors on the driver node. This requires O(k)
    *    passes, O(n) storage on each executor, and O(n k) storage on the driver.
@@ -212,7 +211,7 @@ class RowMatrix(
       tol: Double,
       mode: String): SingularValueDecomposition[RowMatrix, Matrix] = {
     val n = numCols().toInt
-    require(k > 0 && k <= n, s"Request up to n singular values but got k=$k and n=$n.")
+    require(k > 0 && k <= n, s"Requested k singular values but got k=$k and numCols=$n.")
 
     object SVDMode extends Enumeration {
       val LocalARPACK, LocalLAPACK, DistARPACK = Value
@@ -220,8 +219,12 @@ class RowMatrix(
 
     val computeMode = mode match {
       case "auto" =>
+        if (k > 5000) {
+          logWarning(s"computing svd with k=$k and n=$n, please check necessity")
+        }
+
         // TODO: The conditions below are not fully tested.
-        if (n < 100 || k > n / 2) {
+        if (n < 100 || (k > n / 2 && n <= 15000)) {
           // If n is small or k is large compared with n, we better compute the Gramian matrix first
           // and then compute its eigenvalues locally, instead of making multiple passes.
           if (k < n / 3) {
@@ -246,6 +249,8 @@ class RowMatrix(
         val G = computeGramianMatrix().toBreeze.asInstanceOf[BDM[Double]]
         EigenValueDecomposition.symmetricEigs(v => G * v, n, k, tol, maxIter)
       case SVDMode.LocalLAPACK =>
+        // breeze (v0.10) svd latent constraint, 7 * n * n + 4 * n < Int.MaxValue
+        require(n < 17515, s"$n exceeds the breeze svd capability")
         val G = computeGramianMatrix().toBreeze.asInstanceOf[BDM[Double]]
         val brzSvd.SVD(uFull: BDM[Double], sigmaSquaresFull: BDV[Double], _) = brzSvd(G)
         (sigmaSquaresFull, uFull)
@@ -493,6 +498,50 @@ class RowMatrix(
   }
 
   /**
+   * Compute QR decomposition for [[RowMatrix]]. The implementation is designed to optimize the QR
+   * decomposition (factorization) for the [[RowMatrix]] of a tall and skinny shape.
+   * Reference:
+   *  Paul G. Constantine, David F. Gleich. "Tall and skinny QR factorizations in MapReduce
+   *  architectures"  ([[http://dx.doi.org/10.1145/1996092.1996103]])
+   *
+   * @param computeQ whether to computeQ
+   * @return QRDecomposition(Q, R), Q = null if computeQ = false.
+   */
+  def tallSkinnyQR(computeQ: Boolean = false): QRDecomposition[RowMatrix, Matrix] = {
+    val col = numCols().toInt
+    // split rows horizontally into smaller matrices, and compute QR for each of them
+    val blockQRs = rows.glom().map { partRows =>
+      val bdm = BDM.zeros[Double](partRows.length, col)
+      var i = 0
+      partRows.foreach { row =>
+        bdm(i, ::) := row.toBreeze.t
+        i += 1
+      }
+      breeze.linalg.qr.reduced(bdm).r
+    }
+
+    // combine the R part from previous results vertically into a tall matrix
+    val combinedR = blockQRs.treeReduce{ (r1, r2) =>
+      val stackedR = BDM.vertcat(r1, r2)
+      breeze.linalg.qr.reduced(stackedR).r
+    }
+    val finalR = Matrices.fromBreeze(combinedR.toDenseMatrix)
+    val finalQ = if (computeQ) {
+      try {
+        val invR = inv(combinedR)
+        this.multiply(Matrices.fromBreeze(invR))
+      } catch {
+        case err: MatrixSingularException =>
+          logWarning("R is not invertible and return Q as null")
+          null
+      }
+    } else {
+      null
+    }
+    QRDecomposition(finalQ, finalR)
+  }
+
+  /**
    * Find all similar columns using the DIMSUM sampling algorithm, described in two papers
    *
    * http://arxiv.org/abs/1206.2082
@@ -526,23 +575,23 @@ class RowMatrix(
       val rand = new XORShiftRandom(indx)
       val scaled = new Array[Double](p.size)
       iter.flatMap { row =>
-        val buf = new ListBuffer[((Int, Int), Double)]()
         row match {
-          case sv: SparseVector =>
-            val nnz = sv.indices.size
+          case SparseVector(size, indices, values) =>
+            val nnz = indices.size
             var k = 0
             while (k < nnz) {
-              scaled(k) = sv.values(k) / q(sv.indices(k))
+              scaled(k) = values(k) / q(indices(k))
               k += 1
             }
-            k = 0
-            while (k < nnz) {
-              val i = sv.indices(k)
+
+            Iterator.tabulate (nnz) { k =>
+              val buf = new ListBuffer[((Int, Int), Double)]()
+              val i = indices(k)
               val iVal = scaled(k)
               if (iVal != 0 && rand.nextDouble() < p(i)) {
                 var l = k + 1
                 while (l < nnz) {
-                  val j = sv.indices(l)
+                  val j = indices(l)
                   val jVal = scaled(l)
                   if (jVal != 0 && rand.nextDouble() < p(j)) {
                     buf += (((i, j), iVal * jVal))
@@ -550,17 +599,17 @@ class RowMatrix(
                   l += 1
                 }
               }
-              k += 1
-            }
-          case dv: DenseVector =>
-            val n = dv.values.size
+              buf
+            }.flatten
+          case DenseVector(values) =>
+            val n = values.size
             var i = 0
             while (i < n) {
-              scaled(i) = dv.values(i) / q(i)
+              scaled(i) = values(i) / q(i)
               i += 1
             }
-            i = 0
-            while (i < n) {
+            Iterator.tabulate (n) { i =>
+              val buf = new ListBuffer[((Int, Int), Double)]()
               val iVal = scaled(i)
               if (iVal != 0 && rand.nextDouble() < p(i)) {
                 var j = i + 1
@@ -572,10 +621,9 @@ class RowMatrix(
                   j += 1
                 }
               }
-              i += 1
-            }
+              buf
+            }.flatten
         }
-        buf
       }
     }.reduceByKey(_ + _).map { case ((i, j), sim) =>
       MatrixEntry(i.toLong, j.toLong, sim)
@@ -588,8 +636,8 @@ class RowMatrix(
     val n = numCols().toInt
     val mat = BDM.zeros[Double](m, n)
     var i = 0
-    rows.collect().foreach { v =>
-      v.toBreeze.activeIterator.foreach { case (j, v) =>
+    rows.collect().foreach { vector =>
+      vector.foreachActive { case (j, v) =>
         mat(i, j) = v
       }
       i += 1
@@ -620,11 +668,9 @@ object RowMatrix {
     // TODO: Find a better home (breeze?) for this method.
     val n = v.size
     v match {
-      case dv: DenseVector =>
-        blas.dspr("U", n, alpha, dv.values, 1, U)
-      case sv: SparseVector =>
-        val indices = sv.indices
-        val values = sv.values
+      case DenseVector(values) =>
+        blas.dspr("U", n, alpha, values, 1, U)
+      case SparseVector(size, indices, values) =>
         val nnz = indices.length
         var colStartIdx = 0
         var prevCol = 0
