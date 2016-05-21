@@ -37,6 +37,15 @@ abstract class Filter
 case class EqualTo(attribute: String, value: Any) extends Filter
 
 /**
+ * Performs equality comparison, similar to [[EqualTo]]. However, this differs from [[EqualTo]]
+ * in that it returns `true` (rather than NULL) if both inputs are NULL, and `false`
+ * (rather than NULL) if one of the input is NULL and the other is not NULL.
+ *
+ * @since 1.5.0
+ */
+case class EqualNullSafe(attribute: String, value: Any) extends Filter
+
+/**
  * A filter that evaluates to `true` iff the attribute evaluates to a value
  * greater than `value`.
  *
@@ -73,7 +82,24 @@ case class LessThanOrEqual(attribute: String, value: Any) extends Filter
  *
  * @since 1.3.0
  */
-case class In(attribute: String, values: Array[Any]) extends Filter
+case class In(attribute: String, values: Array[Any]) extends Filter {
+  override def hashCode(): Int = {
+    var h = attribute.hashCode
+    values.foreach { v =>
+      h *= 41
+      h += v.hashCode()
+    }
+    h
+  }
+  override def equals(o: Any): Boolean = o match {
+    case In(a, vs) =>
+      a == attribute && vs.length == values.length && vs.zip(values).forall(x => x._1 == x._2)
+    case _ => false
+  }
+  override def toString: String = {
+    s"In($attribute, [${values.mkString(",")}]"
+  }
+}
 
 /**
  * A filter that evaluates to `true` iff the attribute evaluates to null.

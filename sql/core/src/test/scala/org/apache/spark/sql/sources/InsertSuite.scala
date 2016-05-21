@@ -19,23 +19,19 @@ package org.apache.spark.sql.sources
 
 import java.io.File
 
-import org.scalatest.BeforeAndAfterAll
-
-import org.apache.spark.sql.{SaveMode, AnalysisException, Row}
+import org.apache.spark.sql.{AnalysisException, Row}
+import org.apache.spark.sql.test.SharedSQLContext
 import org.apache.spark.util.Utils
 
-class InsertSuite extends DataSourceTest with BeforeAndAfterAll {
-
-  import caseInsensitiveContext.sql
-
-  private lazy val sparkContext = caseInsensitiveContext.sparkContext
-
-  var path: File = null
+class InsertSuite extends DataSourceTest with SharedSQLContext {
+  protected override lazy val sql = caseInsensitiveContext.sql _
+  private var path: File = null
 
   override def beforeAll(): Unit = {
+    super.beforeAll()
     path = Utils.createTempDir()
     val rdd = sparkContext.parallelize((1 to 10).map(i => s"""{"a":$i, "b":"str$i"}"""))
-    caseInsensitiveContext.read.json(rdd).registerTempTable("jt")
+    caseInsensitiveContext.read.json(rdd).createOrReplaceTempView("jt")
     sql(
       s"""
         |CREATE TEMPORARY TABLE jsonTable (a int, b string)
@@ -47,9 +43,13 @@ class InsertSuite extends DataSourceTest with BeforeAndAfterAll {
   }
 
   override def afterAll(): Unit = {
-    caseInsensitiveContext.dropTempTable("jsonTable")
-    caseInsensitiveContext.dropTempTable("jt")
-    Utils.deleteRecursively(path)
+    try {
+      caseInsensitiveContext.dropTempTable("jsonTable")
+      caseInsensitiveContext.dropTempTable("jt")
+      Utils.deleteRecursively(path)
+    } finally {
+      super.afterAll()
+    }
   }
 
   test("Simple INSERT OVERWRITE a JSONRelation") {
@@ -111,7 +111,7 @@ class InsertSuite extends DataSourceTest with BeforeAndAfterAll {
 
     // Writing the table to less part files.
     val rdd1 = sparkContext.parallelize((1 to 10).map(i => s"""{"a":$i, "b":"str$i"}"""), 5)
-    caseInsensitiveContext.read.json(rdd1).registerTempTable("jt1")
+    caseInsensitiveContext.read.json(rdd1).createOrReplaceTempView("jt1")
     sql(
       s"""
          |INSERT OVERWRITE TABLE jsonTable SELECT a, b FROM jt1
@@ -123,7 +123,7 @@ class InsertSuite extends DataSourceTest with BeforeAndAfterAll {
 
     // Writing the table to more part files.
     val rdd2 = sparkContext.parallelize((1 to 10).map(i => s"""{"a":$i, "b":"str$i"}"""), 10)
-    caseInsensitiveContext.read.json(rdd2).registerTempTable("jt2")
+    caseInsensitiveContext.read.json(rdd2).createOrReplaceTempView("jt2")
     sql(
       s"""
          |INSERT OVERWRITE TABLE jsonTable SELECT a, b FROM jt2
@@ -166,21 +166,6 @@ class InsertSuite extends DataSourceTest with BeforeAndAfterAll {
     )
   }
 
-  test("save directly to the path of a JSON table") {
-    caseInsensitiveContext.table("jt").selectExpr("a * 5 as a", "b")
-      .write.mode(SaveMode.Overwrite).json(path.toString)
-    checkAnswer(
-      sql("SELECT a, b FROM jsonTable"),
-      (1 to 10).map(i => Row(i * 5, s"str$i"))
-    )
-
-    caseInsensitiveContext.table("jt").write.mode(SaveMode.Overwrite).json(path.toString)
-    checkAnswer(
-      sql("SELECT a, b FROM jsonTable"),
-      (1 to 10).map(i => Row(i, s"str$i"))
-    )
-  }
-
   test("it is not allowed to write to a table while querying it.") {
     val message = intercept[AnalysisException] {
       sql(
@@ -189,7 +174,7 @@ class InsertSuite extends DataSourceTest with BeforeAndAfterAll {
       """.stripMargin)
     }.getMessage
     assert(
-      message.contains("Cannot insert overwrite into table that is also being read from."),
+      message.contains("Cannot overwrite a path that is also being read from."),
       "INSERT OVERWRITE to a table while querying it should not be allowed.")
   }
 
@@ -221,9 +206,10 @@ class InsertSuite extends DataSourceTest with BeforeAndAfterAll {
       sql("SELECT a * 2 FROM jsonTable"),
       (1 to 10).map(i => Row(i * 2)).toSeq)
 
-    assertCached(sql("SELECT x.a, y.a FROM jsonTable x JOIN jsonTable y ON x.a = y.a + 1"), 2)
-    checkAnswer(
-      sql("SELECT x.a, y.a FROM jsonTable x JOIN jsonTable y ON x.a = y.a + 1"),
+    assertCached(sql(
+      "SELECT x.a, y.a FROM jsonTable x JOIN jsonTable y ON x.a = y.a + 1"), 2)
+    checkAnswer(sql(
+      "SELECT x.a, y.a FROM jsonTable x JOIN jsonTable y ON x.a = y.a + 1"),
       (2 to 10).map(i => Row(i, i - 1)).toSeq)
 
     // Insert overwrite and keep the same schema.

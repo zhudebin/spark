@@ -24,7 +24,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.mllib.evaluation.MulticlassMetrics
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.mllib.regression.LabeledPoint
-import org.apache.spark.mllib.tree.{DecisionTree, RandomForest, impurity}
+import org.apache.spark.mllib.tree.{impurity, DecisionTree, RandomForest}
 import org.apache.spark.mllib.tree.configuration.{Algo, Strategy}
 import org.apache.spark.mllib.tree.configuration.Algo._
 import org.apache.spark.mllib.util.MLUtils
@@ -98,7 +98,7 @@ object DecisionTreeRunner {
         .action((x, c) => c.copy(numTrees = x))
       opt[String]("featureSubsetStrategy")
         .text(s"feature subset sampling strategy" +
-          s" (${RandomForest.supportedFeatureSubsetStrategies.mkString(", ")}}), " +
+          s" (${RandomForest.supportedFeatureSubsetStrategies.mkString(", ")}), " +
           s"default: ${defaultParams.featureSubsetStrategy}")
         .action((x, c) => c.copy(featureSubsetStrategy = x))
       opt[Double]("fracTest")
@@ -178,7 +178,7 @@ object DecisionTreeRunner {
     }
     // For classification, re-index classes if needed.
     val (examples, classIndexMap, numClasses) = algo match {
-      case Classification => {
+      case Classification =>
         // classCounts: class --> # examples in class
         val classCounts = origExamples.map(_.label).countByValue()
         val sortedClasses = classCounts.keys.toList.sorted
@@ -207,7 +207,6 @@ object DecisionTreeRunner {
           println(s"$c\t$frac\t${classCounts(c)}")
         }
         (examples, classIndexMap, numClasses)
-      }
       case Regression =>
         (origExamples, null, 0)
       case _ =>
@@ -223,7 +222,7 @@ object DecisionTreeRunner {
         case "libsvm" => MLUtils.loadLibSVMFile(sc, testInput, numFeatures)
       }
       algo match {
-        case Classification => {
+        case Classification =>
           // classCounts: class --> # examples in class
           val testExamples = {
             if (classIndexMap.isEmpty) {
@@ -233,7 +232,6 @@ object DecisionTreeRunner {
             }
           }
           Array(examples, testExamples)
-        }
         case Regression =>
           Array(examples, origTestExamples)
       }

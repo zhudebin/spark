@@ -18,16 +18,15 @@
 // scalastyle:off println
 package org.apache.spark.examples
 
-import breeze.linalg.{Vector, DenseVector, squaredDistance}
+import breeze.linalg.{squaredDistance, DenseVector, Vector}
 
 import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.SparkContext._
 
 /**
  * K-means clustering.
  *
  * This is an example implementation for learning how to use Spark. For more conventional use,
- * please refer to org.apache.spark.mllib.clustering.KMeans
+ * please refer to org.apache.spark.ml.clustering.KMeans.
  */
 object SparkKMeans {
 
@@ -53,7 +52,7 @@ object SparkKMeans {
   def showWarning() {
     System.err.println(
       """WARN: This is a naive implementation of KMeans Clustering and is given as an example!
-        |Please use the KMeans method found in org.apache.spark.mllib.clustering
+        |Please use org.apache.spark.ml.clustering.KMeans
         |for more conventional use.
       """.stripMargin)
   }

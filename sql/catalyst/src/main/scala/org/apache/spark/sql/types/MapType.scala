@@ -20,6 +20,7 @@ package org.apache.spark.sql.types
 import org.json4s.JsonAST.JValue
 import org.json4s.JsonDSL._
 
+import org.apache.spark.annotation.DeveloperApi
 
 /**
  * :: DeveloperApi ::
@@ -31,6 +32,7 @@ import org.json4s.JsonDSL._
  * @param valueType The data type of map values.
  * @param valueContainsNull Indicates if map values have `null` values.
  */
+@DeveloperApi
 case class MapType(
   keyType: DataType,
   valueType: DataType,
@@ -62,8 +64,14 @@ case class MapType(
 
   override def simpleString: String = s"map<${keyType.simpleString},${valueType.simpleString}>"
 
-  private[spark] override def asNullable: MapType =
+  override def sql: String = s"MAP<${keyType.sql}, ${valueType.sql}>"
+
+  override private[spark] def asNullable: MapType =
     MapType(keyType.asNullable, valueType.asNullable, valueContainsNull = true)
+
+  override private[spark] def existsRecursively(f: (DataType) => Boolean): Boolean = {
+    f(this) || keyType.existsRecursively(f) || valueType.existsRecursively(f)
+  }
 }
 
 

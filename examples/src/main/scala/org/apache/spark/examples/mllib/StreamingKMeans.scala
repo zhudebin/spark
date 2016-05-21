@@ -58,7 +58,8 @@ object StreamingKMeans {
       System.exit(1)
     }
 
-    val conf = new SparkConf().setMaster("local").setAppName("StreamingLinearRegression")
+    // $example on$
+    val conf = new SparkConf().setAppName("StreamingKMeansExample")
     val ssc = new StreamingContext(conf, Seconds(args(2).toLong))
 
     val trainingData = ssc.textFileStream(args(0)).map(Vectors.parse)
@@ -74,6 +75,7 @@ object StreamingKMeans {
 
     ssc.start()
     ssc.awaitTermination()
+    // $example off$
   }
 }
 // scalastyle:on println
