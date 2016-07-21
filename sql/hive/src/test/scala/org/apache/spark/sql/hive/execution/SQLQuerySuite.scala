@@ -63,6 +63,17 @@ class SQLQuerySuite extends QueryTest with SQLTestUtils with TestHiveSingleton {
   import hiveContext._
   import spark.implicits._
 
+  test("script") {
+    val df = Seq(("x1", "y1", "z1"), ("x2", "y2", "z2")).toDF("c1", "c2", "c3")
+    df.createOrReplaceTempView("script_table")
+    val query1 = sql(
+      """
+        |SELECT col1 FROM (from(SELECT c1, c2, c3 FROM script_table) tempt_table
+        |REDUCE c1, c2, c3 USING 'bash src/test/resources/test_script.sh' AS
+        |(col1 STRING, col2 STRING)) script_test_table""".stripMargin)
+    checkAnswer(query1, Row("x1_y1") :: Row("x2_y2") :: Nil)
+  }
+
   test("UDTF") {
     withUserDefinedFunction("udtf_count2" -> true) {
       sql(s"ADD JAR ${hiveContext.getHiveFile("TestUDTF.jar").getCanonicalPath()}")
@@ -994,29 +1005,6 @@ class SQLQuerySuite extends QueryTest with SQLTestUtils with TestHiveSingleton {
 
   test("Cast STRING to BIGINT") {
     checkAnswer(sql("SELECT CAST('775983671874188101' as BIGINT)"), Row(775983671874188101L))
-  }
-
-  // `Math.exp(1.0)` has different result for different jdk version, so not use createQueryTest
-  test("udf_java_method") {
-    checkAnswer(sql(
-      """
-        |SELECT java_method("java.lang.String", "valueOf", 1),
-        |       java_method("java.lang.String", "isEmpty"),
-        |       java_method("java.lang.Math", "max", 2, 3),
-        |       java_method("java.lang.Math", "min", 2, 3),
-        |       java_method("java.lang.Math", "round", 2.5D),
-        |       java_method("java.lang.Math", "exp", 1.0D),
-        |       java_method("java.lang.Math", "floor", 1.9D)
-        |FROM src tablesample (1 rows)
-      """.stripMargin),
-      Row(
-        "1",
-        "true",
-        java.lang.Math.max(2, 3).toString,
-        java.lang.Math.min(2, 3).toString,
-        java.lang.Math.round(2.5).toString,
-        java.lang.Math.exp(1.0).toString,
-        java.lang.Math.floor(1.9).toString))
   }
 
   test("dynamic partition value test") {

@@ -978,6 +978,7 @@ object functions {
    * @group normal_funcs
    * @since 1.4.0
    */
+  @deprecated("Use monotonically_increasing_id()", "2.0.0")
   def monotonicallyIncreasingId(): Column = monotonically_increasing_id()
 
   /**
@@ -2720,6 +2721,14 @@ object functions {
    * @since 1.3.0
    */
   def explode(e: Column): Column = withExpr { Explode(e.expr) }
+
+  /**
+   * Creates a new row for each element with position in the given array or map column.
+   *
+   * @group collection_funcs
+   * @since 2.1.0
+   */
+  def posexplode(e: Column): Column = withExpr { PosExplode(e.expr) }
 
   /**
    * Extracts json object from a json string based on json path specified, and returns json string
