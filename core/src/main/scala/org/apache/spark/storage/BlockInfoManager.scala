@@ -340,7 +340,7 @@ private[storage] class BlockInfoManager extends Logging {
     val blocksWithReleasedLocks = mutable.ArrayBuffer[BlockId]()
 
     val readLocks = synchronized {
-      readLocksByTask.remove(taskAttemptId).get
+      readLocksByTask.remove(taskAttemptId).getOrElse(ConcurrentHashMultiset.create[BlockId]())
     }
     val writeLocks = synchronized {
       writeLocksByTask.remove(taskAttemptId).getOrElse(Seq.empty)
