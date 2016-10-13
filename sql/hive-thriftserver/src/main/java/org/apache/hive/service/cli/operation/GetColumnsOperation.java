@@ -143,13 +143,13 @@ public class GetColumnsOperation extends MetadataOperation {
         Collections.sort(tableNames);
         db2Tabs.put(dbName, tableNames);
       }
-
+      /**
       if (isAuthV2Enabled()) {
         List<HivePrivilegeObject> privObjs = getPrivObjs(db2Tabs);
         String cmdStr = "catalog : " + catalogName + ", schemaPattern : " + schemaName
             + ", tablePattern : " + tableName;
         authorizeMetaGets(HiveOperationType.GET_COLUMNS, privObjs, cmdStr);
-      }
+      }  */
 
       for (Entry<String, List<String>> dbTabs : db2Tabs.entrySet()) {
         String dbName = dbTabs.getKey();

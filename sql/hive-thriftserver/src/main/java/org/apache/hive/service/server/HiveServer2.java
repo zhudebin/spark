@@ -110,7 +110,8 @@ public class HiveServer2 extends CompositeService {
         server = new HiveServer2();
         server.init(hiveConf);
         server.start();
-        ShimLoader.getHadoopShims().startPauseMonitor(hiveConf);
+          // todo 暂时不清楚会有什么影响
+//        ShimLoader.getHadoopShims().startPauseMonitor(hiveConf);
         break;
       } catch (Throwable throwable) {
         if (server != null) {

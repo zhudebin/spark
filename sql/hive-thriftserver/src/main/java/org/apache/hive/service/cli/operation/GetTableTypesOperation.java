@@ -55,7 +55,8 @@ public class GetTableTypesOperation extends MetadataOperation {
   public void runInternal() throws HiveSQLException {
     setState(OperationState.RUNNING);
     if (isAuthV2Enabled()) {
-      authorizeMetaGets(HiveOperationType.GET_TABLETYPES, null);
+        // hive 1.1.1 没有这个枚举
+//      authorizeMetaGets(HiveOperationType.GET_TABLETYPES, null);
     }
     try {
       for (TableType type : TableType.values()) {

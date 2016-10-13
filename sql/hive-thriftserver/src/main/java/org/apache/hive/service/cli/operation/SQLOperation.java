@@ -99,7 +99,8 @@ public class SQLOperation extends ExecuteStatementOperation {
       // Yarn ATS
       String guid64 = Base64.encodeBase64URLSafeString(getHandle().getHandleIdentifier()
           .toTHandleIdentifier().getGuid()).trim();
-      driver.setOperationId(guid64);
+        // todo 暂时不知道会有什么问题
+//      driver.setOperationId(guid64);
 
       // In Hive server mode, we are not able to retry in the FetchTask
       // case, when calling fetch queries since execute() has returned.

@@ -90,6 +90,7 @@ public class ThriftHttpServlet extends TServlet {
     this.authType = authType;
     this.serviceUGI = serviceUGI;
     this.httpUGI = httpUGI;
+      /**
     this.isCookieAuthEnabled = hiveConf.getBoolVar(
       ConfVars.HIVE_SERVER2_THRIFT_HTTP_COOKIE_AUTH_ENABLED);
     // Initialize the cookie based authentication related variables.
@@ -106,7 +107,7 @@ public class ThriftHttpServlet extends TServlet {
         ConfVars.HIVE_SERVER2_THRIFT_HTTP_COOKIE_IS_SECURE);
       this.isHttpOnlyCookie = hiveConf.getBoolVar(
         ConfVars.HIVE_SERVER2_THRIFT_HTTP_COOKIE_IS_HTTPONLY);
-    }
+    }    */
   }
 
   @Override
