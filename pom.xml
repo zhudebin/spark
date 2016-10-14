@@ -1628,6 +1628,47 @@
       </dependency>
 
       <dependency>
+        <groupId>${hive.group}</groupId>
+        <artifactId>hive-service</artifactId>
+        <version>${hive.version}</version>
+        <scope>${hive.deps.scope}</scope>
+        <exclusions>
+            <exclusion>
+                <groupId>commons-logging</groupId>
+                <artifactId>commons-logging</artifactId>
+            </exclusion>
+            <exclusion>
+                <groupId>org.eclipse.jetty.aggregate</groupId>
+                <artifactId>jetty-all</artifactId>
+            </exclusion>
+            <exclusion>
+                <groupId>tomcat</groupId>
+                <artifactId>jasper-compiler</artifactId>
+            </exclusion>
+            <exclusion>
+                <groupId>tomcat</groupId>
+                <artifactId>jasper-runtime</artifactId>
+            </exclusion>
+            <exclusion>
+                <groupId>tomcat</groupId>
+                <artifactId>jasper-runtime</artifactId>
+            </exclusion>
+            <exclusion>
+                <groupId>javax.servlet.jsp</groupId>
+                <artifactId>jsp-api</artifactId>
+            </exclusion>
+            <exclusion>
+                <groupId>org.jamon</groupId>
+                <artifactId>jamon-runtime</artifactId>
+            </exclusion>
+            <exclusion>
+                <groupId>org.apache.curator</groupId>
+                <artifactId>curator-framework</artifactId>
+            </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
         <groupId>net.sf.jpam</groupId>
         <artifactId>jpam</artifactId>
         <scope>${hive.deps.scope}</scope>
@@ -1952,7 +1993,7 @@
           <configuration>
             <scalaVersion>${scala.version}</scalaVersion>
             <recompileMode>incremental</recompileMode>
-            <useZincServer>false</useZincServer>
+            <useZincServer>true</useZincServer>
             <args>
               <arg>-unchecked</arg>
               <arg>-deprecation</arg>
@@ -2012,7 +2053,7 @@
             <environmentVariables>
               <!--
                 Setting SPARK_DIST_CLASSPATH is a simple way to make sure any child processes
-                launched by the tests have access to the correct test-time classpath.
+                launched b<y the tests have access to the correct test-time classpath.
               -->
               <SPARK_DIST_CLASSPATH>${test_classpath}</SPARK_DIST_CLASSPATH>
               <SPARK_PREPEND_CLASSES>1</SPARK_PREPEND_CLASSES>
