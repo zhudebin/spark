@@ -94,10 +94,12 @@
       <groupId>net.sf.jpam</groupId>
       <artifactId>jpam</artifactId>
     </dependency>
+      <!--
     <dependency>
         <groupId>com.esotericsoftware.kryo</groupId>
         <artifactId>kryo</artifactId>
     </dependency>
+    -->
   </dependencies>
   <build>
     <outputDirectory>target/scala-${scala.binary.version}/classes</outputDirectory>

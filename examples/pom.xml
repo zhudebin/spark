@@ -35,10 +35,10 @@
     <sbt.project.name>examples</sbt.project.name>
     <build.testJarPhase>none</build.testJarPhase>
     <build.copyDependenciesPhase>package</build.copyDependenciesPhase>
-    <flume.deps.scope>provided</flume.deps.scope>
-    <hadoop.deps.scope>provided</hadoop.deps.scope>
-    <hive.deps.scope>provided</hive.deps.scope>
-    <parquet.deps.scope>provided</parquet.deps.scope>
+    <flume.deps.scope>compile</flume.deps.scope>
+    <hadoop.deps.scope>compile</hadoop.deps.scope>
+    <hive.deps.scope>compile</hive.deps.scope>
+    <parquet.deps.scope>compile</parquet.deps.scope>
   </properties>
 
   <dependencies>
@@ -47,54 +47,54 @@
       <groupId>org.spark-project.spark</groupId>
       <artifactId>unused</artifactId>
       <version>1.0.0</version>
-      <scope>provided</scope>
+      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-core_${scala.binary.version}</artifactId>
       <version>${project.version}</version>
-      <scope>provided</scope>
+      <!--<scope>provided</scope>-->
     </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-streaming_${scala.binary.version}</artifactId>
       <version>${project.version}</version>
-      <scope>provided</scope>
+      <!--<scope>provided</scope>-->
     </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-mllib_${scala.binary.version}</artifactId>
       <version>${project.version}</version>
-      <scope>provided</scope>
+      <!--<scope>provided</scope>-->
     </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-hive_${scala.binary.version}</artifactId>
       <version>${project.version}</version>
-      <scope>provided</scope>
+      <!--<scope>provided</scope>-->
     </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-graphx_${scala.binary.version}</artifactId>
       <version>${project.version}</version>
-      <scope>provided</scope>
+      <!--<scope>provided</scope>-->
     </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-streaming-flume_${scala.binary.version}</artifactId>
       <version>${project.version}</version>
-      <scope>provided</scope>
+      <!--<scope>provided</scope>-->
     </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-streaming-kafka-0-8_${scala.binary.version}</artifactId>
       <version>${project.version}</version>
-      <scope>provided</scope>
+      <!--<scope>provided</scope>-->
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-math3</artifactId>
-      <scope>provided</scope>
+      <!--<scope>provided</scope>-->
     </dependency>
     <dependency>
       <groupId>org.scalacheck</groupId>
@@ -104,7 +104,7 @@
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
-      <scope>provided</scope>
+      <!--<scope>provided</scope>-->
     </dependency>
     <dependency>
       <groupId>com.github.scopt</groupId>
@@ -114,8 +114,44 @@
     <dependency>
       <groupId>com.twitter</groupId>
       <artifactId>parquet-hadoop-bundle</artifactId>
-      <scope>provided</scope>
+      <!--<scope>provided</scope>-->
     </dependency>
+      <dependency>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-server</artifactId>
+          <version>9.2.16.v20160414</version>
+          <scope>compile</scope>
+      </dependency>
+      <dependency>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-util</artifactId>
+          <version>9.2.16.v20160414</version>
+          <scope>compile</scope>
+      </dependency>
+      <dependency>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-servlet</artifactId>
+          <version>9.2.16.v20160414</version>
+          <scope>compile</scope>
+      </dependency>
+      <dependency>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-security</artifactId>
+          <version>9.2.16.v20160414</version>
+          <scope>compile</scope>
+      </dependency>
+      <dependency>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-http</artifactId>
+          <version>9.2.16.v20160414</version>
+          <scope>compile</scope>
+      </dependency>
+      <dependency>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-servlets</artifactId>
+          <version>9.2.16.v20160414</version>
+          <scope>compile</scope>
+      </dependency>
   </dependencies>
 
   <build>

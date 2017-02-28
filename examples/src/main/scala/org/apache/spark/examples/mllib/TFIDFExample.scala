@@ -30,7 +30,7 @@ object TFIDFExample {
 
   def main(args: Array[String]): Unit = {
 
-    val conf = new SparkConf().setAppName("TFIDFExample")
+    val conf = new SparkConf().setAppName("TFIDFExample").setMaster("local[4]")
     val sc = new SparkContext(conf)
 
     // $example on$
